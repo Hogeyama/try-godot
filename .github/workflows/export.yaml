@@ -1,0 +1,53 @@
+name: Export as HTML5
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot binary
+        id: cache-godot-bin
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-bin-4.4.1
+
+      - name: Install Godot binary
+        if: steps.cache-godot-bin.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -qO /tmp/godot.zip
+          unzip /tmp/godot.zip -d /tmp/godot
+          sudo mv /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Cache Godot export templates
+        id: cache-godot-templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates/4.4.1.stable
+          key: godot-export-templates-4.4.1
+
+      - name: Download and install Godot export templates
+        if: steps.cache-godot-templates.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/4.4.1.stable
+          wget https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz -qO /tmp/templates.tpz
+          unzip /tmp/templates.tpz -d /tmp
+          cp -r /tmp/templates/web* ~/.local/share/godot/export_templates/4.4.1.stable/
+          ls -l /home/runner/.local/share/godot/export_templates/4.4.1.stable
+
+      - name: Export
+        run: |
+          godot --display-driver headless --export-release Web export/index.html
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: export
+          path: export/**
