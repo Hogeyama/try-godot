@@ -33,6 +33,9 @@ func game_over():
 	$HUD.show_game_over()
 	$Music.stop()
 	$DeathSound.play()
+	JavaScriptBridge.eval("""
+		alert("Game Over. Score {score}");
+	""".format({"score": score}), true)
 
 func new_game():
 	score = 0
